@@ -17,3 +17,11 @@ def test_check_absolute_paths():
     assert "Users" in paths[0][2]
     assert "Desktop" in paths[0][2]
     assert "data.csv" in paths[0][2]
+
+
+def test_relative_paths_are_not_flagged():
+    project = "benchmark_projects/project_clean"
+
+    paths = check_absolute_paths(project)
+
+    assert paths == []
