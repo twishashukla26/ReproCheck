@@ -7,6 +7,7 @@ from reprocheck.repository import (
 from reprocheck.dependencies import read_dependencies
 from reprocheck.import_checker import find_imports
 from reprocheck.file_checker import check_file_exists, check_absolute_paths
+from reprocheck.dependency_checker import check_dependency_mismatches
 
 import sys
 
@@ -48,6 +49,16 @@ def generate_report(project_path):
 
     for package in imports:
         print("-", package)
+
+    print("\nDependency Issues:")
+
+    mismatches = check_dependency_mismatches(project_path)
+
+    if mismatches:
+        for package in mismatches:
+            print("⚠", package, "imported but not declared")
+    else:
+        print("✓ No dependency mismatches detected")
 
     print("\nFile Checks:")
 
