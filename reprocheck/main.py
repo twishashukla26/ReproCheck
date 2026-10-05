@@ -8,7 +8,10 @@ from reprocheck.dependencies import read_dependencies
 from reprocheck.import_checker import find_imports
 from reprocheck.file_checker import check_file_exists, check_absolute_paths
 from reprocheck.dependency_checker import check_dependency_mismatches
-from reprocheck.docker_checker import check_docker_files
+from reprocheck.docker_checker import (
+    check_docker_files,
+    check_dockerfile_structure
+)
 
 import sys
 
@@ -91,6 +94,17 @@ def generate_report(project_path):
 
     if docker_results["Dockerfile"]:
         print("✓ Dockerfile found")
+
+        dockerfile_structure = check_dockerfile_structure(project_path)
+
+        if dockerfile_structure["valid"]:
+            print("✓ Dockerfile structure valid")
+        else:
+            print("⚠ Dockerfile structure incomplete")
+
+            for instruction in dockerfile_structure["missing"]:
+                print("  Missing:", instruction)
+
     else:
         print("✗ Dockerfile missing")
 
