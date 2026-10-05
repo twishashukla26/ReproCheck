@@ -1,6 +1,22 @@
 import json
 
-from reprocheck.json_report import save_json_report
+from reprocheck.json_report import (
+    collect_results,
+    save_json_report
+)
+
+
+def test_collect_results():
+
+    project = "benchmark_projects/project_docker"
+
+    results = collect_results(project)
+
+    assert results["README"] is False
+    assert results["LICENSE"] is False
+    assert results["Dependencies"] is True
+    assert results["Dockerfile"] is True
+    assert results["Docker Compose"] is True
 
 
 def test_save_json_report(tmp_path):
