@@ -8,6 +8,7 @@ from reprocheck.dependencies import read_dependencies
 from reprocheck.import_checker import find_imports
 from reprocheck.file_checker import check_file_exists, check_absolute_paths
 from reprocheck.dependency_checker import check_dependency_mismatches
+from reprocheck.docker_checker import check_docker_files
 
 import sys
 
@@ -83,6 +84,20 @@ def generate_report(project_path):
             )
     else:
         print("✓ No hard-coded absolute paths detected")
+
+    print("\nDocker Checks:")
+
+    docker_results = check_docker_files(project_path)
+
+    if docker_results["Dockerfile"]:
+        print("✓ Dockerfile found")
+    else:
+        print("✗ Dockerfile missing")
+
+    if docker_results["Docker Compose"]:
+        print("✓ Docker Compose file found")
+    else:
+        print("⚠ Docker Compose file missing")
 
     print("\n============================")
 

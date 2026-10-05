@@ -1,0 +1,5 @@
+services:
+  reprocheck-test:
+    build: .
+    container_name: reprocheck-test
+    command: python main.py
