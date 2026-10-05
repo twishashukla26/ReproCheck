@@ -13,6 +13,11 @@ from reprocheck.docker_checker import (
     check_dockerfile_structure
 )
 
+from reprocheck.json_report import (
+    collect_results,
+    save_json_report
+)
+
 import sys
 
 
@@ -116,10 +121,27 @@ def generate_report(project_path):
     print("\n============================")
 
 
-if __name__ == "__main__":
+def main():
 
     if len(sys.argv) < 2:
         print("Please provide project path")
-        exit()
+        return
 
-    generate_report(sys.argv[1])
+    project_path = sys.argv[1]
+
+    generate_report(project_path)
+
+    if "--json" in sys.argv:
+        results = collect_results(project_path)
+
+        save_json_report(
+            project_path,
+            results,
+            "report.json"
+        )
+
+        print("\n✓ JSON report saved to report.json")
+
+
+if __name__ == "__main__":
+    main()
