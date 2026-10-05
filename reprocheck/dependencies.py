@@ -1,4 +1,3 @@
-cat > reprocheck/dependencies.py <<'EOF'
 from pathlib import Path
 
 
@@ -21,4 +20,3 @@ def read_dependencies(project_path):
                 dependencies.append(line)
 
     return dependencies
-EOF
