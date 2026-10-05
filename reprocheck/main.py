@@ -6,6 +6,7 @@ from reprocheck.repository import (
 
 from reprocheck.dependencies import read_dependencies
 from reprocheck.import_checker import find_imports
+from reprocheck.file_checker import check_file_exists, check_absolute_paths
 
 import sys
 
@@ -34,14 +35,12 @@ def generate_report(project_path):
         else "✗ Dependencies file missing"
     )
 
-
     print("\nDeclared Dependencies:")
 
     dependencies = read_dependencies(project_path)
 
     for dependency in dependencies:
         print("-", dependency)
-
 
     print("\nDetected Imports:")
 
@@ -50,6 +49,29 @@ def generate_report(project_path):
     for package in imports:
         print("-", package)
 
+    print("\nFile Checks:")
+
+    sample_file = "data/sample.csv"
+
+    if check_file_exists(project_path, sample_file):
+        print("✓", sample_file, "found")
+    else:
+        print("✗", sample_file, "missing")
+
+    print("\nHard-coded Paths:")
+
+    absolute_paths = check_absolute_paths(project_path)
+
+    if absolute_paths:
+        for file_path, line_number, line in absolute_paths:
+            print(
+                "⚠ Absolute path detected:",
+                file_path,
+                "line",
+                line_number
+            )
+    else:
+        print("✓ No hard-coded absolute paths detected")
 
     print("\n============================")
 
