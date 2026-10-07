@@ -1,0 +1,8 @@
+services:
+  reprocheck:
+    build: .
+    container_name: reprocheck
+    volumes:
+      - ./benchmark_projects:/app/benchmark_projects
+    command: python -m reprocheck.main benchmark_projects/project_clean
+
