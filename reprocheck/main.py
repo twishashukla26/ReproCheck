@@ -18,32 +18,195 @@ from reprocheck.json_report import (
     save_json_report
 )
 
+from reprocheck.result import CheckResult
+from reprocheck.report import format_report
+
 import sys
+
+
+def build_check_results(project_path):
+
+    results = []
+
+    # Repository checks
+    if check_readme(project_path):
+        results.append(
+            CheckResult(
+                "README",
+                "PASS",
+                "README found"
+            )
+        )
+    else:
+        results.append(
+            CheckResult(
+                "README",
+                "FAIL",
+                "README file missing"
+            )
+        )
+
+    if check_license(project_path):
+        results.append(
+            CheckResult(
+                "LICENSE",
+                "PASS",
+                "LICENSE found"
+            )
+        )
+    else:
+        results.append(
+            CheckResult(
+                "LICENSE",
+                "WARNING",
+                "LICENSE file missing"
+            )
+        )
+
+    if check_dependencies(project_path):
+        results.append(
+            CheckResult(
+                "Dependencies",
+                "PASS",
+                "Dependencies file found"
+            )
+        )
+    else:
+        results.append(
+            CheckResult(
+                "Dependencies",
+                "WARNING",
+                "Dependencies file missing"
+            )
+        )
+
+    # Dependency mismatch check
+    mismatches = check_dependency_mismatches(project_path)
+
+    if mismatches:
+        results.append(
+            CheckResult(
+                "Dependency Mismatches",
+                "WARNING",
+                f"{len(mismatches)} imported package(s) not declared"
+            )
+        )
+    else:
+        results.append(
+            CheckResult(
+                "Dependency Mismatches",
+                "PASS",
+                "No dependency mismatches detected"
+            )
+        )
+
+    # Required data file
+    sample_file = "data/sample.csv"
+
+    if check_file_exists(project_path, sample_file):
+        results.append(
+            CheckResult(
+                "Sample Data",
+                "PASS",
+                f"{sample_file} found"
+            )
+        )
+    else:
+        results.append(
+            CheckResult(
+                "Sample Data",
+                "FAIL",
+                f"{sample_file} missing"
+            )
+        )
+
+    # Hard-coded absolute paths
+    absolute_paths = check_absolute_paths(project_path)
+
+    if absolute_paths:
+        results.append(
+            CheckResult(
+                "Hard-coded Paths",
+                "WARNING",
+                f"{len(absolute_paths)} absolute path(s) detected"
+            )
+        )
+    else:
+        results.append(
+            CheckResult(
+                "Hard-coded Paths",
+                "PASS",
+                "No hard-coded absolute paths detected"
+            )
+        )
+
+    # Docker checks
+    docker_results = check_docker_files(project_path)
+
+    if docker_results["Dockerfile"]:
+        results.append(
+            CheckResult(
+                "Dockerfile",
+                "PASS",
+                "Dockerfile found"
+            )
+        )
+
+        dockerfile_structure = check_dockerfile_structure(project_path)
+
+        if dockerfile_structure["valid"]:
+            results.append(
+                CheckResult(
+                    "Dockerfile Structure",
+                    "PASS",
+                    "Dockerfile structure valid"
+                )
+            )
+        else:
+            missing = ", ".join(dockerfile_structure["missing"])
+
+            results.append(
+                CheckResult(
+                    "Dockerfile Structure",
+                    "WARNING",
+                    f"Dockerfile structure incomplete; missing: {missing}"
+                )
+            )
+
+    else:
+        results.append(
+            CheckResult(
+                "Dockerfile",
+                "FAIL",
+                "Dockerfile missing"
+            )
+        )
+
+    if docker_results["Docker Compose"]:
+        results.append(
+            CheckResult(
+                "Docker Compose",
+                "PASS",
+                "Docker Compose file found"
+            )
+        )
+    else:
+        results.append(
+            CheckResult(
+                "Docker Compose",
+                "WARNING",
+                "Docker Compose file missing"
+            )
+        )
+
+    return results
 
 
 def generate_report(project_path):
 
-    print("\n===== ReproCheck Report =====\n")
+    results = build_check_results(project_path)
 
-    print("Repository Checks:")
-
-    print(
-        "✓ README found"
-        if check_readme(project_path)
-        else "✗ README missing"
-    )
-
-    print(
-        "✓ LICENSE found"
-        if check_license(project_path)
-        else "✗ LICENSE missing"
-    )
-
-    print(
-        "✓ Dependencies file found"
-        if check_dependencies(project_path)
-        else "✗ Dependencies file missing"
-    )
+    print(format_report(project_path, results))
 
     print("\nDeclared Dependencies:")
 
@@ -58,67 +221,6 @@ def generate_report(project_path):
 
     for package in imports:
         print("-", package)
-
-    print("\nDependency Issues:")
-
-    mismatches = check_dependency_mismatches(project_path)
-
-    if mismatches:
-        for package in mismatches:
-            print("⚠", package, "imported but not declared")
-    else:
-        print("✓ No dependency mismatches detected")
-
-    print("\nFile Checks:")
-
-    sample_file = "data/sample.csv"
-
-    if check_file_exists(project_path, sample_file):
-        print("✓", sample_file, "found")
-    else:
-        print("✗", sample_file, "missing")
-
-    print("\nHard-coded Paths:")
-
-    absolute_paths = check_absolute_paths(project_path)
-
-    if absolute_paths:
-        for file_path, line_number, line in absolute_paths:
-            print(
-                "⚠ Absolute path detected:",
-                file_path,
-                "line",
-                line_number
-            )
-    else:
-        print("✓ No hard-coded absolute paths detected")
-
-    print("\nDocker Checks:")
-
-    docker_results = check_docker_files(project_path)
-
-    if docker_results["Dockerfile"]:
-        print("✓ Dockerfile found")
-
-        dockerfile_structure = check_dockerfile_structure(project_path)
-
-        if dockerfile_structure["valid"]:
-            print("✓ Dockerfile structure valid")
-        else:
-            print("⚠ Dockerfile structure incomplete")
-
-            for instruction in dockerfile_structure["missing"]:
-                print("  Missing:", instruction)
-
-    else:
-        print("✗ Dockerfile missing")
-
-    if docker_results["Docker Compose"]:
-        print("✓ Docker Compose file found")
-    else:
-        print("⚠ Docker Compose file missing")
-
-    print("\n============================")
 
 
 def main():
