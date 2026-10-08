@@ -22,7 +22,7 @@ def check_absolute_paths(project_path):
 
     for python_file in project.rglob("*.py"):
 
-        with open(python_file, "r") as file:
+        with open(python_file, "r", encoding="utf-8") as file:
 
             for line_number, line in enumerate(file, start=1):
 

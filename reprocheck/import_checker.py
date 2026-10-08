@@ -11,7 +11,7 @@ def find_imports(project_path):
 
     for python_file in project.rglob("*.py"):
 
-        with open(python_file, "r") as file:
+        with open(python_file, "r", encoding="utf-8") as file:
             tree = ast.parse(file.read())
 
         for node in ast.walk(tree):
