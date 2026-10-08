@@ -4,7 +4,7 @@
 
 ReproCheck is a lightweight open-source tool that audits a Python-based software or data science project for common reproducibility issues.
 
-It checks whether important project files, dependencies, referenced files, paths, and container configuration are present and consistent. The tool produces a clear report so that another user can identify potential problems before attempting to reproduce the project.
+It checks whether important project files, dependencies, referenced files, paths, and container configuration are present and consistent. The tool produces a structured report so that another user can identify potential problems before attempting to reproduce the project.
 
 ---
 
@@ -39,6 +39,7 @@ The main objectives of ReproCheck are to:
 - Check Docker and Docker Compose configuration.
 - Generate structured JSON results.
 - Provide a reproducible execution environment using Docker.
+- Present findings using PASS, WARNING, and FAIL statuses.
 
 ---
 
@@ -46,32 +47,32 @@ The main objectives of ReproCheck are to:
 
 ```text
                     Target Project
-                          |
-                          v
+                         |
+                         v
                   Project Scanner
-                          |
-        +-----------------+-----------------+
-        |                 |                 |
-        v                 v                 v
- Repository          Dependency        File & Path
-   Checks              Checks             Checks
-        |                 |                 |
-        +-----------------+-----------------+
-                          |
-                          v
-                    Docker Checks
-                          |
-                          v
-                    Result Engine
-                          |
-              +-----------+-----------+
-              |                       |
-              v                       v
-       Terminal Report          JSON Report
+                         |
+        +----------------+----------------+
+        |                |                |
+        v                v                v
+ Repository         Dependency       File & Path
+   Checks             Checks            Checks
+        |                |                |
+        +----------------+----------------+
+                         |
+                         v
+                   Docker Checks
+                         |
+                         v
+                 Structured Results
+                         |
+             +-----------+-----------+
+             |                       |
+             v                       v
+      Terminal Report          JSON Report
 Checks Performed
 1. Repository Checks
 
-ReproCheck checks for:
+ReproCheck checks for important project files:
 
 README.md, README.txt, or README
 LICENSE, LICENSE.txt, or LICENSE.md
@@ -80,13 +81,13 @@ requirements.txt or pyproject.toml
 
 The tool:
 
-Reads dependencies from requirements.txt
-Detects Python imports using the AST module
-Compares imported packages with declared dependencies
-Reports packages that are imported but not declared
-3. File Checks
+Reads dependencies from requirements.txt.
+Detects Python imports using the Python AST module.
+Compares imported packages with declared dependencies.
+Reports packages that are imported but not declared.
+3. File and Path Checks
 
-ReproCheck can check whether expected project files exist.
+ReproCheck checks whether expected project files exist.
 
 It also scans Python files for common hard-coded absolute paths such as:
 
@@ -101,23 +102,42 @@ These paths can prevent a project from working on another machine.
 The tool checks for:
 
 Dockerfile
-docker-compose.yml / docker-compose.yaml
-Basic Dockerfile instructions:
+docker-compose.yml
+docker-compose.yaml
+
+It also validates basic Dockerfile instructions including:
+
 FROM
 WORKDIR
 COPY
 RUN
 CMD
-5. JSON Reporting
+5. Structured PASS / WARNING / FAIL Reporting
 
-ReproCheck can generate a structured JSON report containing:
+Each check produces a structured result containing:
 
-Repository results
-Declared dependencies
-Detected imports
-Dependency mismatches
-Hard-coded paths
-Docker configuration results
+Check name
+Status
+Message
+
+The report groups findings into:
+
+PASSED
+WARNINGS
+FAILED
+
+This makes it easier to distinguish successful checks from potential reproducibility problems and missing required components.
+
+6. JSON Reporting
+
+ReproCheck can generate a structured JSON report containing project check results and analysis information.
+
+Run:
+
+python -m reprocheck.main benchmark_projects/project_docker --json
+
+The generated report.json can be used by other tools or workflows.
+
 Technology Stack
 Technology	Purpose
 Python	Core implementation
@@ -150,6 +170,8 @@ ReproCheck/
 │   ├── file_checker.py
 │   ├── docker_checker.py
 │   ├── json_report.py
+│   ├── result.py
+│   ├── report.py
 │   └── main.py
 │
 ├── tests/
@@ -161,6 +183,7 @@ ReproCheck/
 │   ├── test_file_checker.py
 │   ├── test_docker_checker.py
 │   ├── test_json_report.py
+│   ├── test_report.py
 │   └── test_main.py
 │
 ├── Dockerfile
@@ -191,33 +214,66 @@ Run ReproCheck against a benchmark project:
 
 python -m reprocheck.main benchmark_projects/project_clean
 
-The tool prints a reproducibility report in the terminal.
+The tool prints a structured reproducibility report in the terminal.
+
+Example
+========================================
+        REPROCHECK REPORT
+========================================
+
+Project: benchmark_projects/project_clean
+
+PASSED
+------
+  ✓ README: README found
+  ✓ LICENSE: LICENSE found
+  ✓ Dependencies: Dependencies file found
+  ✓ Dependency Mismatches: No dependency mismatches detected
+  ✓ Sample Data: data/sample.csv found
+  ✓ Hard-coded Paths: No hard-coded absolute paths detected
+
+WARNINGS
+--------
+  ⚠ Docker Compose: Docker Compose file missing
+
+FAILED
+------
+  ✗ Dockerfile: Dockerfile missing
+
+----------------------------------------
+Summary
+-------
+Passed:   6
+Warnings: 1
+Failed:   1
+----------------------------------------
+
+The exact results depend on the project being analysed.
+Understanding the Statuses
+PASS
+
+The check was successfully satisfied.
 
 Example:
 
-===== ReproCheck Report =====
+✓ Dependencies: Dependencies file found
+WARNING
 
-Repository Checks:
-✓ README found
-✓ LICENSE found
-✓ Dependencies file found
+A potential reproducibility issue was detected, but the project may still contain enough information to continue analysis.
 
-Declared Dependencies:
-- pandas
-- numpy
+Example:
 
-Detected Imports:
-- pandas
-- numpy
+⚠ Dependency Mismatches: 1 imported package(s) not declared
+FAIL
 
-Dependency Issues:
-✓ No dependency mismatches detected
+A required component or condition was not satisfied.
 
-File Checks:
-✓ data/sample.csv found
+Example:
 
-Hard-coded Paths:
-✓ No hard-coded absolute paths detected
+✗ Sample Data: data/sample.csv missing
+
+The status classification is based on the current ReproCheck implementation and is intended to make the report easier to interpret.
+
 JSON Report
 
 To generate a JSON report:
@@ -228,7 +284,7 @@ The command generates:
 
 report.json
 
-The JSON report contains structured results that can be used by other tools or workflows.
+The JSON output provides structured results that can be used by other tools or workflows.
 
 Running with Docker
 
@@ -240,16 +296,15 @@ Run the project:
 
 docker compose up
 
-ReproCheck can also be run against another benchmark project inside the container:
+ReproCheck can also be run against a benchmark project inside the container:
 
 docker compose run --rm reprocheck python -m reprocheck.main benchmark_projects/project_docker
 
 Example Docker checks:
 
-Docker Checks:
-✓ Dockerfile found
-✓ Dockerfile structure valid
-✓ Docker Compose file found
+✓ Dockerfile: Dockerfile found
+✓ Dockerfile Structure: Dockerfile structure valid
+✓ Docker Compose: Docker Compose file found
 Benchmark Projects
 
 ReproCheck includes small benchmark projects with controlled conditions for testing the auditor.
@@ -270,7 +325,7 @@ python -m pytest
 
 Current test result:
 
-16 passed
+18 passed
 
 The tests cover:
 
@@ -283,6 +338,7 @@ File checks
 Hard-coded path detection
 Docker checks
 JSON reporting
+Structured report formatting
 Main CLI workflow
 Scope and Limitations
 Included
@@ -293,6 +349,7 @@ Python import analysis
 File and path checks
 Docker configuration checks
 JSON reporting
+PASS / WARNING / FAIL reporting
 Automated testing
 Containerized execution
 Not Included
@@ -339,6 +396,7 @@ Dependency analysis
 Import analysis
 File and path checks
 Docker checks
+Structured PASS / WARNING / FAIL reporting
 JSON reporting
 Automated tests
 Docker Compose execution
